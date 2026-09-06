@@ -16,12 +16,16 @@
 - 不默认启用 multiprocessing；CPU-bound 任务应根据实际情况单独设计。
 
 使用原则：
-1. 新建脚本前先读取本模板，并按实际需求修改。
-2. 不要无条件启用线程、进程、retry 或 timeout。
-3. 不要把模板中的所有配置项都保留到最终程序；仅保留实际需要的配置。
-4. CPU-bound 任务不要直接套用 run_concurrently()，应根据任务特征考虑
-   ProcessPoolExecutor / multiprocessing，并遵守 Windows spawn / PyInstaller 规则。
-5. 仅清理当前任务明确创建的临时文件，不根据名称或时间猜测并删除用户文件。
+1. 新建脚本前先读取本模板，并按实际需求修改；脚手架约定见
+   references/standalone-script.md。
+2. 不要无条件启用线程、进程、retry 或 timeout；不要保留模板中所有配置项，
+   只保留实际需要的配置。并发/重试/超时与外部程序规则见
+   references/concurrency-retry.md。
+3. CPU-bound 任务不要直接套用 run_concurrently()，应根据任务特征考虑
+   ProcessPoolExecutor / multiprocessing，并遵守 Windows spawn / PyInstaller 规则，
+   详见 references/windows-packaging.md。
+4. 仅清理当前任务明确创建的临时文件，不根据名称或时间猜测并删除用户文件，
+   详见 references/data-integrity.md。
 """
 
 from __future__ import annotations
