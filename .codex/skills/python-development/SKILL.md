@@ -28,9 +28,10 @@ description: 新建、编写、修改、调试或优化 Python 脚本/程序时�
 | --- | --- |
 | 判断是否并发、重试、超时、调用外部程序 | `references/concurrency-retry.md` |
 | Windows / 打包 EXE / 路径 / INI / 编码 | `references/windows-packaging.md` |
-| 覆盖、临时文件、防重复、资源、恢复、校验 | `references/data-integrity.md` |
+| 覆盖、临时文件、清理边界、防重复、资源、校验 | `references/data-integrity.md` |
+| 断点续传、已完成判定、运行前确认、命令行参数 | `references/resume-and-cli.md` |
 | 图像 / PDF / 第三方依赖 / 性能 / 领域验证 | `references/domain-processing.md` |
-| 新建独立脚本、复用模板 | `references/standalone-script.md` |
+| 新建独立脚本、复用模板、日志规范 | `references/standalone-script.md` |
 
 ## 模板与验证
 

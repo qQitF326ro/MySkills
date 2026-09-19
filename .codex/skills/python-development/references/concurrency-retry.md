@@ -27,7 +27,7 @@
 
 原则：临时性失败有限重试，确定性失败尽快失败并报告原因。至少明确最大尝试次数、等待间隔、可重试异常、是否幂等、最终失败如何记录、是否需要 cleanup。必要时 exponential backoff。
 
-默认 `RETRY_COUNT = 3`、`RETRY_INTERVAL = 5`，作为文件/网络类操作的起点，按任务特征调整。
+默认 `RETRY_COUNT = 3`、`RETRY_INTERVAL = 10`（每次重试固定间隔 10 秒），作为文件/网络类操作的起点，按任务特征调整；两个值都属于可配置项，不要写成散落在代码里的魔法数字。
 
 禁止 `except Exception: pass`，也禁止对所有异常无条件 retry。
 

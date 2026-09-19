@@ -6,7 +6,7 @@
 
 模板提供以下通用能力：
 - 直接运行 .py 与 PyInstaller EXE 时，正确定位程序所在目录；
-- 默认从程序同目录读取同名 GB2312 编码的 .ini；
+- 默认从程序同目录读取同名 .ini（UTF-8 优先，GB2312 备选）；
 - 配置文件不存在时自动创建并停止，避免使用未经用户确认的默认路径；
 - 文本读取默认 UTF-8，失败后尝试 GB2312；
 - 默认双日志：INFO 与 WARNING/ERROR 分离到两个带时间戳的日志文件；
@@ -84,7 +84,7 @@ log = logging.getLogger(APP_NAME)
 #   默认 1，意味着顺序执行。
 #
 # RETRY_COUNT / RETRY_INTERVAL：
-#   仅作为文件/网络类 transient error 的合理起点。
+#   仅作为文件/网络类 transient error 的合理起点：默认 3 次、间隔 10 秒。
 #   不代表所有错误都应该 retry。
 #
 # TIMEOUT：
@@ -96,7 +96,7 @@ log = logging.getLogger(APP_NAME)
 DEFAULT_CONFIG = {
     "THREAD_COUNT": "1",
     "RETRY_COUNT": "3",
-    "RETRY_INTERVAL": "5",
+    "RETRY_INTERVAL": "10",
     "TIMEOUT": "300",
     "SOURCE_ROOT": "",
     "TARGET_ROOT": "",
@@ -105,7 +105,7 @@ DEFAULT_CONFIG = {
 CONFIG_COMMENTS = {
     "THREAD_COUNT": "I/O 类批处理的并发线程数，默认 1（顺序执行）；仅在确认并发有收益时调大",
     "RETRY_COUNT": "文件/网络类可重试错误的最大尝试次数",
-    "RETRY_INTERVAL": "两次尝试之间的基础等待时间（秒）",
+    "RETRY_INTERVAL": "两次尝试之间的基础等待时间（秒）；默认 10 秒",
     "TIMEOUT": "可能长时间等待的操作超时时间（秒）；按实际任务调整",
     "SOURCE_ROOT": "源目录，本地或 UNC 路径；不需要时可删除此配置项",
     "TARGET_ROOT": "目标目录，本地或 UNC 路径；不需要时可删除此配置项",
@@ -134,7 +134,7 @@ TRANSIENT_EXCEPTIONS = (
 def _write_default_config() -> None:
     """创建带中文注释的默认 INI。
 
-    使用 GB2312，符合 Windows 传统中文环境下的项目约定。
+    使用 UTF-8，避免在 Windows 与跨平台环境下出现编码不一致。
     """
     lines = [
         "; 自动生成的配置文件，请根据实际任务填写。",
@@ -149,7 +149,7 @@ def _write_default_config() -> None:
         lines.append(f"{key} = {value}")
         lines.append("")
 
-    CONFIG_PATH.write_text("\n".join(lines), encoding="gb2312")
+    CONFIG_PATH.write_text("\n".join(lines), encoding="utf-8")
 
 
 class ConfigCreatedError(RuntimeError):
@@ -173,10 +173,7 @@ def load_config() -> ConfigParser:
         )
 
     config = ConfigParser(interpolation=None)
-    read_files = config.read(CONFIG_PATH, encoding="gb2312")
-
-    if not read_files:
-        raise OSError(f"无法读取配置文件：{CONFIG_PATH}")
+    config.read_string(read_text_auto(CONFIG_PATH))
 
     if not config.has_section(CONFIG_SECTION):
         raise ValueError(
@@ -224,16 +221,16 @@ def setup_logging() -> tuple[Path, Path]:
     """初始化双日志。
 
     输出：
-    - {程序名}_{时间戳}_info.log：仅 INFO
-    - {程序名}_{时间戳}_error.log：WARNING / ERROR
+    - {程序名}_info_{时间戳}.log：仅 INFO
+    - {程序名}_error_{时间戳}.log：WARNING / ERROR
     - 控制台：INFO 及以上
 
     每次启动生成新的日志文件，不覆盖历史日志。
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    info_log_path = APP_DIR / f"{APP_NAME}_{timestamp}_info.log"
-    error_log_path = APP_DIR / f"{APP_NAME}_{timestamp}_error.log"
+    info_log_path = APP_DIR / f"{APP_NAME}_info_{timestamp}.log"
+    error_log_path = APP_DIR / f"{APP_NAME}_error_{timestamp}.log"
 
     formatter = logging.Formatter(
         "%(asctime)s [%(levelname)s] %(message)s"
@@ -283,7 +280,7 @@ def setup_logging() -> tuple[Path, Path]:
 
 def retry(
     times: int = 3,
-    interval: float = 5,
+    interval: float = 10,
     backoff: float = 1.0,
     exceptions: tuple[type[BaseException], ...] = TRANSIENT_EXCEPTIONS,
 ):
@@ -294,7 +291,7 @@ def retry(
         总尝试次数，而不是“额外重试次数”。
         例如 times=3 表示最多执行 3 次。
     - interval：
-        基础等待时间，单位秒。
+        基础等待时间，单位秒；默认 10 秒。
     - backoff：
         等待时间倍率。
         1.0 = 固定间隔；
